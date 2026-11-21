@@ -1,0 +1,194 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>SIMULADOR IPERC</title>
+<style>
+:root{--bg:#f5f5f4;--c:#fff;--t:#1c1917;--m:#57534e;--b:#d6d3d1;--a:#f59e0b;--ok:#16a34a;--no:#dc2626;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0f172a;--c:#1e293b;--t:#f1f5f9;--m:#94a3b8;--b:#334155}}
+:root[data-theme=dark]{--bg:#0f172a;--c:#1e293b;--t:#f1f5f9;--m:#94a3b8;--b:#334155}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--t)}
+header{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5;padding:10px 12px;border-bottom:1px solid var(--b)}
+.w{max-width:900px;margin:auto}.card{background:var(--c);border:1px solid var(--b);border-radius:14px;padding:16px;margin:12px 0}
+h1,h2{margin:0 0 8px}h1{font-size:19px}h2{font-size:18px}
+button{font:inherit;cursor:pointer;border:1px solid var(--b);background:var(--c);color:var(--t);border-radius:10px;padding:9px 12px}
+button:disabled{cursor:default}.p{background:var(--a);color:#000;border-color:var(--a);font-weight:700}
+.ok{border-color:var(--ok)!important;background:rgba(22,163,74,.18)!important}.no{border-color:var(--no)!important;background:rgba(220,38,38,.18)!important}
+.bar{height:8px;background:var(--b);border-radius:8px;overflow:hidden}.bar i{display:block;height:100%;background:var(--a)}
+nav{display:flex;gap:6px;overflow-x:auto;margin-top:8px}nav button{white-space:nowrap}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.m{color:var(--m);font-size:13px}.sc{font-weight:800;color:var(--a)}
+.opt{display:block;width:100%;text-align:left;margin:6px 0}label.l{display:block;padding:8px;border:1px solid var(--b);border-radius:10px;margin:6px 0}
+select,input[type=text]{padding:8px;border-radius:8px;border:1px solid var(--b);background:var(--c);color:var(--t);font:inherit}
+
+nav button{background:#2563eb;color:#fff;border:2px solid #1d4ed8;font-weight:700;padding:10px 14px}
+nav button.p{background:var(--a);color:#000;border-color:#b45309}
+.how{background:rgba(37,99,235,.12);border:1px solid #2563eb;border-radius:10px;padding:10px 12px;margin:12px 0 0;font-size:14px}
+.why{background:rgba(245,158,11,.14);border-left:4px solid var(--a);padding:8px 10px;border-radius:6px;margin:8px 0}
+.big{font-size:34px;letter-spacing:2px}.go{font-size:18px;padding:14px 28px;margin-top:12px}
+.rb{flex:1;min-width:120px;padding:16px;font-weight:700;font-size:16px;border:2px solid #2563eb}
+.opt2{padding:12px 18px;font-weight:700;border:2px solid #2563eb}
+</style></head><body>
+<header><div class="w"><div class="row" style="justify-content:space-between"><h1>🦺 SIMULADOR IPERC</h1><div><span id="rn" class="m"></span> <span class="sc" id="tot"></span> · <b id="rk"></b></div></div><div class="bar"><i id="bar"></i></div><nav></nav></div></header>
+<main class="w" style="padding:0 12px 24px" id="v"></main>
+<script>
+const $=s=>document.querySelector(s),V=$('#v');
+const MAX={m1:150,m2:300,m3:150,m4:200,m5:200};
+const NAMES={m0:'🏠 Inicio',m1:'① Clasifica',m2:'② Matriz',m3:'③ Evalúa',m4:'④ Casos',m5:'⑤ Inspección'};
+const E=()=>({m1:0,m2:0,m3:0,m4:0,m5:0});
+let S={name:'',r:'',sc:{c:E(),k:E(),m:E()}},armed=0;
+try{const x=JSON.parse(localStorage.getItem('iperc3')||'{}');S=Object.assign(S,x)}catch(e){}
+const persist=()=>{try{localStorage.setItem('iperc3',JSON.stringify(S))}catch(e){}};
+const tot=(k=S.r)=>k?Object.values(S.sc[k]).reduce((a,b)=>a+b,0):0;
+const rank=t=>t>=850?'🏆 Experto SSOMA':t>=600?'🦺 Supervisor':t>=300?'👷 Operario capacitado':'📘 Aprendiz';
+const lvl=n=>n<=5?'Aceptable':n<=10?'Moderado':n<=15?'Importante':'Intolerable';
+const W={1:20,2:20,3:15,4:10,5:8};
+function head(){$('#rn').textContent=S.r?D[S.r][0]:'Sin rubro';$('#tot').textContent=tot()+' / 1000';$('#rk').textContent=rank(tot());$('#bar').style.width=tot()/10+'%'}
+function best(m,v){if(v>S.sc[S.r][m])S.sc[S.r][m]=v;persist();head()}
+function end(p,max,k){return `<div class=card><h2>Resultado: ${p} / ${max}</h2><p><b>${tot()>=850?'¡Excelente trabajo!':tot()>=600?'¡Muy bien!':tot()>=300?'¡Buen avance!':'Sigue intentándolo.'}</b> Tu puntaje final fue: <b>${tot()} · ${rank(tot())}</b></p><p class=m>Tu mejor puntaje en esta etapa: ${S.sc[S.r][k]}</p><div class=row><button class=p onclick="go('${k}')">Reintentar</button><button onclick="go('m0')">Ir al panel</button></div></div>`}
+function go(m){if(m!='m0'&&!S.r){need=1;m='m0'}document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('p',b.dataset.m==m));F[+m.slice(1)]();scrollTo(0,0)}
+function pick(k){S.r=k;persist();head();f0()}
+const R=()=>D[S.r];
+
+/* DATOS: [nombre, clasifica(10), matriz(3), evalúa(6), casos(8: pregunta, mejor, media, mala, explicación), inspección(10)] */
+const D={
+c:["🏗️ Construcción",
+["Andamio sin barandas|0","Caída a distinto nivel|1","Cable eléctrico pelado|0","Electrocución|1","Silicosis|1","Polvo de sílice en suspensión|0","Guarda en la amoladora|2","Línea de vida y arnés|2","Disco abrasivo girando|0","Charla de 5 minutos y PETAR|2"],
+[["Vaciado de losa a 4 m sin barandas",4,5,["Barandas y línea de vida|3","Losa prefabricada (elimina la altura)|1","Arnés con absorbedor|5","Charla de 5 min y PETAR|4","Pedir que tengan cuidado|0","Pagar bono por riesgo|0"]],
+["Corte de fierro con amoladora sin guarda",4,4,["Instalar guarda al disco|3","Cizalla hidráulica en vez de amoladora|2","Careta facial y lentes|5","Capacitación en uso seguro|4","Trabajar más rápido|0","Quitar la guarda para ver mejor|0"]],
+["Excavación de zanja de 2 m sin entibado",3,5,["Entibado o talud de seguridad|3","Tubería prefabricada sin excavar (elimina)|1","Casco y botas de seguridad|5","Inspección diaria y señalización|4","Entrar rápido, son pocos minutos|0","Apilar la tierra al borde|0"]]],
+[["Mezclar cemento a mano sin respirador",3,4],["Andamio a 5 m con tablones sueltos",4,5],["Escalera de mano sin zapatas",3,3],["Cables eléctricos sobre un charco",3,5],["Cargar sacos de 40 kg a mano todo el día",4,3],["Almacén de obra desordenado",3,2]],
+[["Tu jefe dice “son 5 minutos, sin arnés” en un techo a 5 m.","Interrumpir por peligro inminente y exigir línea de vida","Avisar al supervisor pero hacerlo igual","Aceptar si pagan bono","Ninguna orden está sobre tu vida."],
+["Debes cargar solo un saco de 45 kg.","Pedir ayuda o medio mecánico (RM 375-2008-TR)","Usar faja lumbar","Hacerlo, eres joven","La faja no sube el límite; se carga entre dos o con equipo."],
+["Llega un obrero nuevo y debe empezar hoy.","Inducción, capacitación y EPP antes de empezar","Que observe un día sin EPP","Ponerlo a trabajar ya","La capacitación previa es obligación del empleador."],
+["Se cae una carga a 2 m de un obrero, sin heridos.","Reportar, investigar y actualizar el IPERC","Anotarlo en un cuaderno","No reportar: nadie salió herido","Es un incidente peligroso: se corrige antes de que haya víctimas."],
+["Como supervisor, el IPERC da riesgo 20 para la tarea de hoy.","Paralizar hasta aplicar controles y reevaluar","Continuar con EPP extra","Esperar al fin de turno","Un riesgo intolerable no se acepta."],
+["Ves un tablero eléctrico abierto con cables expuestos.","Señalizar, bloquear el área y pedir un electricista","Cubrirlo con cartón","Ignorarlo, no es tu área","Se aísla el peligro y se reporta."],
+["Una grúa levantará una carga sobre una zona con personas.","Delimitar y evacuar la zona bajo la carga","Avisar con un grito","Que pasen rápido","Nadie debe estar bajo cargas suspendidas."],
+["Trabajas en una zanja y notas grietas en la pared.","Salir, detener la tarea y reforzar el entibado","Terminar rápido y salir","Seguir, hay prisa","Los derrumbes ocurren sin aviso."]],
+["Obrero sin casco junto a la grúa|1","Extintor vigente y señalizado|0","Andamio a 3 m sin barandas|1","Cables eléctricos sobre un charco|1","Zona de acopio demarcada|0","Obrero con arnés anclado en altura|0","Escalera de mano sin zapatas|1","Botiquín completo y accesible|0","Cilindros de gas sin cadena|1","Charla de 5 min registrada|0"]],
+k:["🍽️ Cocina",
+["Piso con grasa|0","Caída al mismo nivel|1","Aceite a 180 °C|0","Quemadura de 2.º grado|1","Cuchilla de picadora expuesta|0","Corte profundo o amputación|1","Mandil y guantes térmicos|2","Empujador y parada de emergencia|2","Gas sin revisión de fugas|0","Capacitación en manipulación|2"],
+[["Freír con aceite a 180 °C sin protección",4,3,["Freidora con tapa y control de temperatura|3","Cocción al horno (reduce el aceite)|2","Mandil y guantes térmicos largos|5","Capacitación y procedimiento de fritura|4","Poner todo en fuego fuerte|0","Cocinar con las manos descubiertas|0"]],
+["Picadora de carne con cuchillas expuestas",3,4,["Guarda fija y parada de emergencia|3","Comprar carne ya molida (elimina la máquina)|1","Guantes anticorte|5","Capacitación y uso de empujador|4","Empujar la carne con la mano|0","Anular el sensor de seguridad|0"]],
+["Posible fuga de gas en la cocina industrial",3,5,["Detector de gas y válvula de corte automática|3","Cocina eléctrica (elimina el gas)|1","Respirador para emergencias|5","Revisión programada y plan de emergencia|4","Buscar la fuga con un fósforo|0","Ignorar el olor|0"]]],
+[["Piso con grasa en la zona de cocción",4,2],["Freír con aceite a 180 °C sin mandil",4,3],["Usar la picadora sin empujador",3,4],["Cuchillo sin filo cortando rápido",3,2],["Cámara frigorífica sin salida interior",2,5],["Levantar ollas de 20 L a mano",3,3]],
+[["Se derrama aceite caliente y hay personal cerca.","Avisar, señalizar, esperar que enfríe y limpiar con material absorbente","Limpiarlo rápido con un trapo","Echarle agua","El agua con aceite caliente salpica y quema."],
+["Se incendia una sartén con aceite.","Cerrar el gas y tapar con una tapa o usar el extintor adecuado","Llevarla al fregadero","Echarle agua","El agua esparce el fuego."],
+["La picadora se atasca.","Apagarla, desconectarla y destrabar con herramienta","Apagarla y meter la mano rápido","Destrabar con ella encendida","Nunca se mete la mano con la máquina conectada."],
+["Recibes carne y la cámara de frío marca 12 °C.","Aislar el producto y reportar la falla","Usarla ese día","Guardarla igual","Se rompe la cadena de frío y hay riesgo biológico."],
+["Un cocinero nuevo debe usar la freidora hoy.","Capacitarlo y supervisarlo antes de que opere solo","Que mire cómo lo hacen otros","Dejarlo solo","Sin capacitación el riesgo sube mucho."],
+["Notas olor a gas.","Cerrar la válvula, ventilar, no encender nada y avisar","Abrir puertas y seguir cocinando","Prender un fósforo para ubicar la fuga","Una chispa puede causar explosión."],
+["Los cuchillos están sin filo y mezclados en un cajón.","Afilarlos y guardarlos en soporte magnético","Usarlos con cuidado","Dejarlos así","Un cuchillo sin filo exige más fuerza y resbala."],
+["Como jefe de cocina, riesgo 18 por piso resbaloso en hora punta.","Detener el paso, limpiar y colocar señal y antideslizante","Poner solo un cartel","Esperar a que baje la hora punta","Un riesgo intolerable se controla de inmediato."]],
+["Piso seco con antideslizante|0","Aceite derramado sin señalizar|1","Mandil y guantes térmicos usados|0","Picadora sin guarda|1","Extintor vigente a la vista|0","Manguera de gas con grietas|1","Cuchillos en soporte magnético|0","Cable de licuadora sobre el fregadero mojado|1","Salida de emergencia libre|0","Ollas hirviendo al borde de la mesa|1"]],
+m:["⛏️ Minería",
+["Roca suelta en el techo|0","Desprendimiento de rocas|1","Monóxido de carbono en la labor|0","Intoxicación por gases|1","Voladura con personal cerca|0","Lesión por proyección de rocas|1","Desatado y sostenimiento|2","Detector de gases y ventilación|2","Perforadora sin guarda|0","Capacitación y procedimientos (PETS)|2"],
+[["Perforación bajo techo con roca suelta",4,5,["Desatado y sostenimiento (pernos y malla)|3","Desatado mecanizado (nadie bajo el techo)|2","Casco y lentes|5","Inspección del techo antes de cada turno|4","Perforar rápido antes de que caiga|0","Ignorar el ruido de la roca|0"]],
+["Acumulación de CO en labor ciega",3,5,["Ventilación forzada y monitoreo continuo|3","Equipos eléctricos en vez de diésel|2","Autorrescatador y respirador|5","Medición previa y permiso de ingreso|4","Entrar sin medir, es corto|0","Taparse la nariz|0"]],
+["Volquete en rampa de noche con conductor fatigado",3,5,["Sensor de somnolencia y bermas en la rampa|3","Turnos cortos y rotación de conductores|2","Cinturón y cabina con protección ROPS|5","Pausas activas y control de horas|4","Manejar con música alta|0","Tomar energizantes en exceso|0"]]],
+[["Perforar bajo techo con roca suelta",4,5],["Conducir volquete de noche con fatiga",3,5],["Voladura con el área mal evacuada",2,5],["Entrar sin detector a labor poco ventilada",3,5],["Ruido de perforadora sin protección auditiva",4,3],["Polvo de sílice en galería sin riego",4,4]],
+[["Notas grietas nuevas en el techo de tu labor.","Retirarte, avisar y desatar o sostener antes de continuar","Terminar tu tarea rápido","Seguir y no decir nada","Las caídas de roca son una de las causas más graves en minería."],
+["El detector marca un nivel alto de CO.","Evacuar, avisar y ventilar hasta valores seguros","Terminar y luego salir","Apagar la alarma","El CO es invisible e inodoro y mata."],
+["Se acerca la voladura y falta evacuar un sector.","Detener la voladura hasta confirmar evacuación y bloqueo","Gritar y disparar igual","Disparar, no hay tiempo","Nadie debe estar en el área de disparo."],
+["Te piden operar la perforadora sin capacitación.","Negarte hasta recibir capacitación y autorización","Operarla con un compañero al lado","Aprender sobre la marcha","Solo personal autorizado opera equipos."],
+["Llevas 14 h de turno y tienes mucho sueño.","Reportarlo y pedir relevo antes de manejar","Tomar café y seguir","Manejar más lento","La fatiga se controla con descanso, no con café."],
+["Falta el candado de bloqueo (LOTO) para intervenir una faja.","No intervenir hasta contar con bloqueo y etiquetado","Apagar la faja y avisar","Intervenir rápido","Sin candado alguien puede reencenderla."],
+["Cayeron rocas sin heridos: incidente peligroso.","Reportar, investigar y actualizar el IPERC","Anotarlo y seguir","No reportar","Se corrige antes de que haya víctimas."],
+["Como supervisor, riesgo 20 por ventilación insuficiente.","Paralizar el frente y restablecer la ventilación","Continuar con respiradores","Esperar al cambio de guardia","Un riesgo intolerable no se acepta."]],
+["Pernos y malla colocados en el techo|0","Roca suelta colgando sobre el frente|1","Detector de gases calibrado|0","Labor sin ventilación|1","Trabajador sin autorrescatador|1","Señal de voladura y área evacuada|0","Volquete sin alarma de retroceso|1","Operario con casco, lentes y respirador|0","Cables eléctricos pelados en la galería|1","Extintores y salida de emergencia señalizados|0"]]};
+
+/* EXPLICACIONES: a=clasifica, b=matriz (P y S), t=evalúa, i=inspección */
+const X={
+c:{a:["Es la condición que puede causar daño; la caída aún no ocurre.","Es el daño que puede ocurrir por ese peligro.","Es la fuente de la descarga: la condición que puede dañar.","Es el daño posible (consecuencia) del cable pelado.","Es la enfermedad que puede resultar de respirar el polvo.","Es la sustancia que causa el daño; todavía no es la enfermedad.","Es una barrera física que aísla el peligro (ingeniería).","Son medidas que evitan o frenan la caída: controles.","Es la fuente que puede cortar o proyectar partículas.","Es una medida administrativa: cambia cómo se trabaja."],
+b:["P4: se trabaja así con frecuencia. S5: una caída de 4 m puede matar.","P4: la amoladora sin guarda se usa a diario. S4: heridas graves o amputación.","P3: ocurre a veces. S5: un derrumbe puede matar."],
+t:["P3: ocurre seguido en obra. S4: el polvo de sílice daña el pulmón de forma permanente.","P4: la altura y los tablones sueltos lo hacen frecuente. S5: una caída puede ser fatal.","P3: es un error común. S3: caída con fractura probable.","P3: hay charcos con frecuencia. S5: la electrocución puede matar.","P4: se hace a diario. S3: lesiones lumbares con descanso médico.","P3: es frecuente. S2: tropiezos con lesión leve."],
+i:["Sin casco hay riesgo de golpe en la cabeza.","Un extintor vigente es una medida de emergencia correcta.","Sin barandas a 3 m hay riesgo de caída a distinto nivel.","Cables y agua juntos: riesgo de electrocución.","La zona demarcada ordena el área y evita accidentes.","El arnés anclado en altura es el control correcto.","Sin zapatas la escalera puede resbalar y causar caída.","El botiquín accesible es parte de la preparación para emergencias.","Cilindros sin cadena pueden caer o fugar gas.","La charla registrada es un control administrativo vigente."]},
+k:{a:["Es la condición que puede provocar un resbalón.","Es el daño posible que causa el piso con grasa.","Es la fuente de calor que puede quemar.","Es la lesión que puede resultar del aceite caliente.","Es la fuente física del daño: el filo expuesto.","Es la lesión posible por contacto con la cuchilla.","Es una barrera personal contra el calor (EPP).","Son medidas que evitan el contacto con la cuchilla (ingeniería).","Es la condición que puede producir fuego o explosión.","Es una medida que mejora cómo se trabaja: administrativa."],
+b:["P4: freír es rutina. S3: quemaduras de 2.º grado.","P3: se usa seguido. S4: amputación de dedos.","P3: puede haber fugas. S5: una explosión puede matar."],
+t:["P4: pasa muy seguido en cocina. S2: golpes y esguinces leves.","P4: es rutina. S3: quemaduras que requieren descanso médico.","P3: ocurre a veces. S4: puede amputar un dedo.","P3: es común. S2: cortes leves.","P2: es poco frecuente. S5: una persona encerrada puede morir.","P3: se hace seguido. S3: lesiones lumbares o quemaduras."],
+i:["El antideslizante reduce el riesgo de resbalar.","Aceite sin señalizar: riesgo de caída.","El EPP térmico protege contra quemaduras.","Sin guarda hay riesgo de corte o amputación.","Un extintor vigente es una medida de emergencia correcta.","Una manguera agrietada puede fugar gas.","El soporte evita cortes al buscar cuchillos.","Cable y agua juntos: riesgo de descarga.","La salida libre permite evacuar rápido.","Ollas al borde pueden caer y quemar."]},
+m:{a:["Es la condición del techo que puede causar daño.","Es la consecuencia posible de la roca suelta.","Es el gas que puede dañar; aún no hay intoxicación.","Es el daño a la salud que puede causar el CO.","Es la fuente del daño: la explosión con gente cerca.","Es la lesión posible por la voladura.","Elimina o reduce la roca suelta: es un control.","Quitan o detectan el gas: son controles.","Es la fuente de daño: partes móviles sin protección.","Es una medida administrativa que forma al personal."],
+b:["P4: la roca suelta es frecuente. S5: puede matar.","P3: la acumulación es posible en labores ciegas. S5: el CO mata.","P3: la fatiga es común de noche. S5: el volcamiento es fatal."],
+t:["P4: es frecuente en labores. S5: el desprendimiento puede matar.","P3: ocurre en turnos largos. S5: un volcamiento suele ser fatal.","P2: es raro si hay procedimiento. S5: una voladura cerca mata.","P3: es posible sin control. S5: el gas puede matar.","P4: es constante. S3: pérdida auditiva progresiva.","P4: se genera a diario. S4: silicosis, daño permanente."],
+i:["El sostenimiento reduce el riesgo de caída de rocas.","Roca suelta sobre el frente: riesgo de aplastamiento.","Un detector calibrado mide bien los gases.","Sin ventilación se acumulan gases tóxicos.","Sin autorrescatador no hay escape ante gases o humo.","Área evacuada y señal son controles correctos de voladura.","Sin alarma de retroceso hay riesgo de atropello.","Casco, lentes y respirador son EPP adecuado.","Cables pelados: riesgo de electrocución.","Extintores y salidas señaladas son medidas de emergencia."]}};
+const LR={1:"Eliminación: quita el peligro de raíz (la mejor opción).",2:"Sustitución: cambia por algo menos peligroso.",3:"Ingeniería: aísla el peligro con barreras o equipos.",4:"Administrativo: cambia cómo se trabaja; depende de las personas.",5:"EPP: protege a la persona, pero es la última barrera.",0:"No es un control válido: no reduce el riesgo o lo aumenta."};
+let need=0;
+const how=t=>`<div class=how><b>📋 Cómo se juega:</b> ${t}</div>`;
+const why=t=>`<div class=why>💡 <b>Por qué:</b> ${t}</div>`;
+
+/* PORTADA */
+function portada(){document.querySelector('header').style.display='none';
+V.innerHTML=`<div class=card style="text-align:center;padding:40px 16px;margin-top:40px"><div style="font-size:56px">🦺</div><h1 class=big>SIMULADOR IPERC</h1><p class=m>Identificación de Peligros, Evaluación de Riesgos y Medidas de Control<br>Ley N.º 29783 · Perú</p><button class="p go" onclick="start()">▶ Comenzar</button></div>
+<div class=card><b>¿Cómo funciona?</b><ol><li>Elige un rubro: Construcción, Cocina o Minería.</li><li>Recorre las 5 etapas con los botones azules de la parte de arriba.</li><li>Cada etapa suma puntos y te explica el porqué de cada respuesta.</li><li>Llega a 1000 puntos para ser Experto SSOMA.</li></ol></div>`}
+function start(){document.querySelector('header').style.display='';go('m0')}
+
+/* PANEL */
+function f0(){V.innerHTML=`${need?'<div class=why>⚠️ Primero elige un rubro para empezar.</div>':''}<div class=card><b>Claves rápidas</b><p class=m>Peligro = fuente de daño. Riesgo = Probabilidad × Severidad (1–25): 1–5 aceptable, 6–10 moderado, 11–15 importante, 16–25 intolerable. Jerarquía de controles: 1 Eliminación → 2 Sustitución → 3 Ingeniería → 4 Administrativos → 5 EPP.</p><p class=m>Rangos: 300 Operario capacitado · 600 Supervisor · 850 Experto SSOMA.</p>
+<div class=row><input type=text id=nm placeholder="Tu nombre" value="${S.name}"><button class=p onclick="share(this)">Copiar mi resultado</button><button onclick="reset(this)">Reiniciar todo</button><button onclick="portada()">Ver portada</button></div></div>
+<div class=card><h2>Paso 1: elige tu rubro</h2><p class=m>Cada rubro tiene sus propios ejercicios y su propio puntaje (1000 pts).</p><div class=row>${Object.keys(D).map(k=>`<button class="rb ${S.r==k?'p':''}" onclick="pick('${k}')">${D[k][0]}<br><span class=m>${tot(k)} / 1000</span></button>`).join('')}</div></div>
+${S.r?`<div class=card><h2>${D[S.r][0]}: tu avance</h2>${how('Usa los botones azules de arriba, en orden del ① al ⑤. Puedes repetir cada etapa para mejorar tu puntaje.')}${Object.keys(MAX).map(k=>`<div style="margin:10px 0"><div class=row style="justify-content:space-between"><b>${NAMES[k]}</b><span class=sc>${S.sc[S.r][k]} / ${MAX[k]}</span></div><div class=bar><i style="width:${S.sc[S.r][k]/MAX[k]*100}%"></i></div></div>`).join('')}</div>`:''}`;
+need=0;$('#nm').onchange=e=>{S.name=e.target.value.slice(0,40);persist()}}
+function share(b){const t=`Simulador IPERC 🇵🇪 — ${S.name||'Participante'}: ${S.r?D[S.r][0]+' ':''}${tot()}/1000 (${rank(tot())})`;
+try{navigator.clipboard.writeText(t).then(()=>b.textContent='¡Copiado!')}catch(e){b.textContent=t}}
+function reset(b){if(!armed){armed=1;b.textContent='¿Seguro? Pulsa otra vez';return}
+armed=0;S={name:S.name,r:'',sc:{c:E(),k:E(),m:E()}};persist();head();f0()}
+
+/* 1 CLASIFICA */
+function f1(){let i=0,p=0;const C=['Peligro','Riesgo','Control'],L=R()[1],x=X[S.r];
+(function show(){if(i>=L.length){best('m1',p);return V.innerHTML=end(p,150,'m1')}
+const [t,k]=L[i].split('|');
+V.innerHTML=`${how('Decide si cada ítem es un <b>Peligro</b> (fuente o condición que puede dañar), un <b>Riesgo</b> (el daño que podría ocurrir) o un <b>Control</b> (medida para reducirlo). Cada acierto vale 15 pts y después verás el porqué.')}<div class=card><div class=m>Ítem ${i+1}/${L.length} · Puntos: <span class=sc>${p}</span></div><h2>“${t}”</h2><p class=m>¿Qué es?</p><div class=row>${C.map((c,j)=>`<button class=opt2 data-k=${j}>${c}</button>`).join('')}</div><div id=fb></div></div>`;
+V.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const ok=+b.dataset.k==+k;if(ok)p+=15;
+V.querySelectorAll('[data-k]').forEach(y=>{y.disabled=1;if(+y.dataset.k==+k)y.classList.add('ok')});if(!ok)b.classList.add('no');
+$('#fb').innerHTML=`<p>${ok?'✅ ¡Correcto! +15':'❌ Era: <b>'+C[k]+'</b>'}</p>${why(x.a[i])}<button class=p id=nx>Siguiente</button>`;$('#nx').onclick=()=>{i++;show()}})})()}
+
+/* 2 MATRIZ */
+function f2(){let i=0,t=0;const L=R()[2],x=X[S.r];
+(function show(){if(i>=L.length){best('m2',t);return V.innerHTML=end(t,300,'m2')}
+const s=L[i],cs=s[3].map(y=>{const a=y.split('|');return [a[0],+a[1]]}),sel=n=>`<select id=${n}>${[1,2,3,4,5].map(v=>`<option>${v}</option>`).join('')}</select>`;
+V.innerHTML=`${how('Para cada escenario: <b>1)</b> estima Probabilidad y Severidad (1 a 5). <b>2)</b> Marca los controles que aplicarías. Puntos: estimación hasta 40, controles hasta 40 y usar eliminación, sustitución o ingeniería sin errores 20. Después verás el porqué de cada control.')}<div class=card><div class=m>Escenario ${i+1}/3 · Puntos: <span class=sc>${t}</span> · máx. 100 por escenario</div><h2>${s[0]}</h2>
+<p><b>Paso 1 · Evalúa el riesgo inicial:</b> Probabilidad ${sel('sp')} Severidad ${sel('ss')}</p>
+<p><b>Paso 2 · Elige los controles que aplicarías:</b></p>${cs.map((c,k)=>`<label class=l><input type=checkbox value=${k}> ${c[0]}</label>`).join('')}<button class=p id=ev>Evaluar</button><div id=fb></div></div>`;
+$('#ev').onclick=()=>{const p=+$('#sp').value,q=+$('#ss').value,ch=[...V.querySelectorAll('input:checked')].map(y=>cs[y.value]);
+const a=d=>d==0?20:d==1?10:0,pa=a(Math.abs(p-s[1])),sa=a(Math.abs(q-s[2]));
+let cp=0,bad=0,hi=0,v=0;ch.forEach(c=>{if(c[1]){cp+=W[c[1]];v++;if(c[1]<=3)hi=1}else bad++});
+cp=Math.max(0,Math.min(40,cp-10*bad));const hb=hi&&!bad?20:0,pts=pa+sa+cp+hb;t+=pts;
+const rp=Math.max(1,s[1]-v),rs=Math.max(1,s[2]-(hi?1:0));
+const list=cs.map(c=>{const on=ch.includes(c);return `<div class=m>${on?(c[1]?'✅':'❌'):(c[1]?'⚪':'▫️')} <b>${c[0]}</b>: ${LR[c[1]]}${!on&&c[1]?' <i>(no la marcaste)</i>':''}</div>`}).join('');
+V.querySelectorAll('input').forEach(y=>y.disabled=1);$('#ev').remove();
+$('#fb').innerHTML=`<p>Experto: P=${s[1]}, S=${s[2]} → riesgo ${s[1]*s[2]} (${lvl(s[1]*s[2])}). Tú: P=${p}, S=${q}. <b>+${pa+sa}</b></p>${why(x.b[i])}
+<p><b>Revisión de controles</b> (✅ marcado y válido · ❌ marcado e inválido · ⚪ válido que no marcaste):</p>${list}
+<p>Controles: <b>+${cp}</b>${bad?` (${bad} inválido${bad>1?'s':''}: −${10*bad})`:''} · Jerarquía (eliminación, sustitución o ingeniería sin errores): <b>+${hb}</b></p>
+<p>Riesgo residual estimado: ${rp*rs} (${lvl(rp*rs)}). <span class=sc>Total del escenario: ${pts}/100</span></p><button class=p id=nx>Siguiente</button>`;$('#nx').onclick=()=>{i++;show()}}})()}
+
+/* 3 EVALÚA */
+function f3(){let i=0,t=0;const L=R()[3],x=X[S.r];
+(function show(){if(i>=L.length){best('m3',t);return V.innerHTML=end(t,150,'m3')}
+const r=L[i];V.innerHTML=`${how('Mueve los deslizadores para estimar la <b>Probabilidad</b> (qué tan seguido ocurre) y la <b>Severidad</b> (qué tan grave sería el daño). Cada punto de diferencia con el experto resta 6 pts (máximo 25 por ronda).')}<div class=card><div class=m>Ronda ${i+1}/${L.length} · Puntos: <span class=sc>${t}</span></div><h2>${r[0]}</h2>
+<p>Probabilidad: <b id=vp>3</b> <span class=m>(1 raro … 5 casi a diario)</span><input type=range id=rp min=1 max=5 value=3 style="width:100%"></p>
+<p>Severidad: <b id=vs>3</b> <span class=m>(1 sin lesión … 5 muerte/incapacidad total)</span><input type=range id=rs min=1 max=5 value=3 style="width:100%"></p>
+<p class=sc id=lv></p><button class=p id=ev>Confirmar (25 pts)</button><div id=fb></div></div>`;
+const up=()=>{const p=+$('#rp').value,s=+$('#rs').value;$('#vp').textContent=p;$('#vs').textContent=s;$('#lv').textContent=`Tu riesgo: ${p*s} (${lvl(p*s)})`};
+$('#rp').oninput=up;$('#rs').oninput=up;up();
+$('#ev').onclick=()=>{const p=+$('#rp').value,s=+$('#rs').value,d=Math.abs(p-r[1])+Math.abs(s-r[2]),pts=Math.max(0,25-6*d);t+=pts;
+$('#rp').disabled=$('#rs').disabled=1;$('#ev').remove();
+$('#fb').innerHTML=`<p>Experto: P=${r[1]}, S=${r[2]} → ${r[1]*r[2]} (${lvl(r[1]*r[2])}). Tú: ${p*s} (${lvl(p*s)}). <b>+${pts} pts</b></p>${why(x.t[i])}<button class=p id=nx>Siguiente</button>`;$('#nx').onclick=()=>{i++;show()}}})()}
+
+/* 4 CASOS */
+function f4(){let i=0,t=0;const L=R()[4];
+(function show(){if(i>=L.length){best('m4',t);return V.innerHTML=end(t,200,'m4')}
+const c=L[i],o=[[c[1],25],[c[2],8],[c[3],0]].sort(()=>Math.random()-.5);
+V.innerHTML=`${how('Lee la situación y elige qué harías. Mejor opción: 25 pts · opción aceptable pero incompleta: 8 pts · incorrecta: 0 pts.')}<div class=card><div class=m>Caso ${i+1}/${L.length} · Puntos: <span class=sc>${t}</span></div><h2>${c[0]}</h2>${o.map((x,k)=>`<button class=opt data-k=${k}>${x[0]}</button>`).join('')}<div id=fb></div></div>`;
+V.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const x=o[+b.dataset.k];t+=x[1];
+V.querySelectorAll('[data-k]').forEach((y,k)=>{y.disabled=1;if(o[k][1]==25)y.classList.add('ok')});if(x[1]<25)b.classList.add('no');
+$('#fb').innerHTML=`<p>${x[1]==25?'✅ ¡Mejor opción!':x[1]?'⚠️ Aceptable, pero no es la mejor':'❌ Incorrecta'} <b>+${x[1]} pts.</b></p>${x[1]<25?`<p>La mejor era: <b>${c[1]}</b></p>`:''}${why(c[4])}<button class=p id=nx>Siguiente</button>`;$('#nx').onclick=()=>{i++;show()}})})()}
+
+/* 5 INSPECCIÓN */
+function f5(){const L=R()[5],a=Array(L.length).fill(-1),x=X[S.r];
+V.innerHTML=`${how('Revisa cada situación de la escena y marca <b>⚠ Peligro</b> o <b>✔ Conforme</b>. Cada acierto vale 20 pts. Al terminar verás el porqué de cada una.')}<div class=card><h2>${R()[0]}: inspección</h2>${L.map((d,k)=>`<div class=card style="margin:8px 0" id=r${k}><div>${d.split('|')[0]}</div><div class=row style="margin-top:6px"><button data-k=${k} data-v=1>⚠ Peligro</button><button data-k=${k} data-v=0>✔ Conforme</button></div></div>`).join('')}<button class=p id=fin>Terminar inspección</button><div id=fb></div></div>`;
+V.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const k=+b.dataset.k;a[k]=+b.dataset.v;document.querySelectorAll(`#r${k} button`).forEach(y=>y.classList.toggle('p',y==b))});
+$('#fin').onclick=()=>{if(a.includes(-1))return $('#fb').textContent='Faltan situaciones por marcar.';let t=0;
+L.forEach((d,k)=>{const h=+d.split('|')[1],ok=a[k]==h;if(ok)t+=20;$('#r'+k).classList.add(ok?'ok':'no');$('#r'+k).insertAdjacentHTML('beforeend',`<div class=m>${ok?'✅':'❌'} ${h?'Era un peligro':'Estaba conforme'}. 💡 ${x.i[k]}</div>`)});
+$('#fin').remove();best('m5',t);$('#fb').innerHTML=end(t,200,'m5')}}
+
+const F=[f0,f1,f2,f3,f4,f5];
+$('nav').innerHTML=Object.keys(NAMES).map(k=>`<button data-m=${k} onclick="go('${k}')">${NAMES[k]}</button>`).join('');
+head();portada();
+</script></body></html>
